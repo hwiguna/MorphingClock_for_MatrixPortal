@@ -2,7 +2,7 @@
 
 #include <Fonts/Picopixel.h>
 
-#include <TimeLib.h> // Time Library provides Time and Date conversions
+#include <TimeLib.h>  // Time Library provides Time and Date conversions
 #include <Timezone.h>
 
 //#include <WiFi.h>   // AdaFruit Matrix Portal M4 uses WiFiNINA instead.
@@ -11,7 +11,7 @@
 #include <WiFiNINA.h>
 
 #if defined(ADAFRUIT_FEATHER_M4_EXPRESS) || defined(ADAFRUIT_FEATHER_M0_EXPRESS) || defined(ADAFRUIT_FEATHER_M0) || defined(ARDUINO_AVR_FEATHER32U4) || defined(ARDUINO_NRF52840_FEATHER) || defined(ADAFRUIT_ITSYBITSY_M0) || defined(ADAFRUIT_ITSYBITSY_M4_EXPRESS) || defined(ARDUINO_AVR_ITSYBITSY32U4_3V) || defined(ARDUINO_NRF52_ITSYBITSY)
-  // Configure the pins used for the ESP32 connection
+// Configure the pins used for the ESP32 connection
 #define SPIWIFI SPI      // The SPI port
 #define SPIWIFI_SS 13    // Chip select pin
 #define ESP32_RESETN 12  // Reset pin
@@ -36,7 +36,7 @@
 #define SPIWIFI_ACK 7    // a.k.a BUSY or READY pin
 #define ESP32_GPIO0 -1
 #elif !defined(SPIWIFI_SS)  // if the wifi definition isnt in the board variant
-  // Don't change the names of these #define's! they match the variant ones
+// Don't change the names of these #define's! they match the variant ones
 #define SPIWIFI SPI
 #define SPIWIFI_SS 10   // Chip select pin
 #define SPIWIFI_ACK 7   // a.k.a BUSY or READY pin
@@ -53,40 +53,39 @@ static const char ntpServerName[] = "us.pool.ntp.org";
 // static const char ntpServerName[] = "time-c.timefreq.bldrdoc.gov";
 
 WiFiUDP Udp;
-unsigned int localPort = 8888; // local port to listen for UDP packets
-TimeChangeRule *tcr;           // pointer to the time change rule, use to get TZ abbrevTimeChangeRule *tcr;           // pointer to the time change rule, use to get TZ abbrev
-time_t prevDisplay = 0; // when the Digital clock was displayed
+unsigned int localPort = 8888;  // local port to listen for UDP packets
+TimeChangeRule* tcr;            // pointer to the time change rule, use to get TZ abbrevTimeChangeRule *tcr;           // pointer to the time change rule, use to get TZ abbrev
+time_t prevDisplay = 0;         // when the Digital clock was displayed
 
 
 //=== PREFERENCES ===
 String credentials[][2] = {
-    {"SSID", "SSDPassword"},
-    {"OptionalOtherSSID", "OptionalOtherSSDPassword"},
+  { "SSID", "SSDPassword" },
+  { "OptionalOtherSSID", "OptionalOtherSSDPassword" },
 };
 const bool SHOW_24HOUR = false;
 
 // Info about these settings at https://github.com/JChristensen/Timezone#coding-timechangerules
-TimeChangeRule myStandardTime = {"CST", First, Sun, Nov, 2, -6 * 60};
-TimeChangeRule myDaylightSavingsTime = {"CDT", Second, Sun, Mar, 2, -5 * 60};
+TimeChangeRule myStandardTime = { "CST", First, Sun, Nov, 2, -6 * 60 };
+TimeChangeRule myDaylightSavingsTime = { "CDT", Second, Sun, Mar, 2, -5 * 60 };
 Timezone myTZ(myStandardTime, myDaylightSavingsTime);
-static const int ntpSyncIntervalInSeconds = 300; // How often to sync with time server (300 = every five minutes)
+static const int ntpSyncIntervalInSeconds = 300;  // How often to sync with time server (300 = every five minutes)
 
 
 /*-------- NTP code ----------*/
-const int NTP_PACKET_SIZE = 48;     // NTP time is in the first 48 bytes of message
-byte packetBuffer[NTP_PACKET_SIZE]; // buffer to hold incoming & outgoing packets
+const int NTP_PACKET_SIZE = 48;      // NTP time is in the first 48 bytes of message
+byte packetBuffer[NTP_PACKET_SIZE];  // buffer to hold incoming & outgoing packets
 
 // send an NTP request to the time server at the given address
-void sendNTPpacket(IPAddress &address)
-{
-  memset(packetBuffer, 0, NTP_PACKET_SIZE); // set all bytes in the buffer to 0
+void sendNTPpacket(IPAddress& address) {
+  memset(packetBuffer, 0, NTP_PACKET_SIZE);  // set all bytes in the buffer to 0
 
   // Initialize values needed to form NTP request
   // (see URL above for details on the packets)
-  packetBuffer[0] = 0b11100011; // LI, Version, Mode
-  packetBuffer[1] = 0;          // Stratum, or type of clock
-  packetBuffer[2] = 6;          // Polling Interval
-  packetBuffer[3] = 0xEC;       // Peer Clock Precision
+  packetBuffer[0] = 0b11100011;  // LI, Version, Mode
+  packetBuffer[1] = 0;           // Stratum, or type of clock
+  packetBuffer[2] = 6;           // Polling Interval
+  packetBuffer[3] = 0xEC;        // Peer Clock Precision
 
   // 8 bytes of zero for Root Delay & Root Dispersion
   packetBuffer[12] = 49;
@@ -96,17 +95,16 @@ void sendNTPpacket(IPAddress &address)
 
   // all NTP fields have been given values, now
   // you can send a packet requesting a timestamp:
-  Udp.beginPacket(address, 123); // NTP requests are to port 123
+  Udp.beginPacket(address, 123);  // NTP requests are to port 123
   Udp.write(packetBuffer, NTP_PACKET_SIZE);
   Udp.endPacket();
 }
 
-time_t getNtpTime()
-{
-  IPAddress ntpServerIP; // NTP server's ip address
+time_t getNtpTime() {
+  IPAddress ntpServerIP;  // NTP server's ip address
 
   while (Udp.parsePacket() > 0)
-    ; // discard any previously received packets
+    ;  // discard any previously received packets
 
   Serial.println("Transmit NTP Request");
   WiFi.hostByName(ntpServerName, ntpServerIP);
@@ -116,13 +114,11 @@ time_t getNtpTime()
 
   sendNTPpacket(ntpServerIP);
   uint32_t beginWait = millis();
-  while (millis() - beginWait < 1500)
-  {
+  while (millis() - beginWait < 1500) {
     int size = Udp.parsePacket();
-    if (size >= NTP_PACKET_SIZE)
-    {
+    if (size >= NTP_PACKET_SIZE) {
       // Serial.println("Receive NTP Response");
-      Udp.read(packetBuffer, NTP_PACKET_SIZE); // read packet into the buffer
+      Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
       unsigned long secsSince1900;
       // convert four bytes starting at location 40 to a long integer
       secsSince1900 = (unsigned long)packetBuffer[40] << 24;
@@ -133,47 +129,45 @@ time_t getNtpTime()
       // NTP server responds within 50ms, so it does not account for the one second lag.
       // unsigned long secsSinceNTPRequest = (millis() - beginWait);
       // Debug("secsSinceNTPRequest=",secsSinceNTPRequest);
-      unsigned long hackFactor = 1; // Without this the clock is 1 second behind (even when drawing without animation)
+      unsigned long hackFactor = 1;  // Without this the clock is 1 second behind (even when drawing without animation)
 
       return secsSince1900 - 2208988800UL + hackFactor;
     }
   }
   Serial.println("No NTP Response :-(");
-  return timeNotSet; // return 0 if unable to get the time
+  return timeNotSet;  // return 0 if unable to get the time
 }
 
 
-void DrawText(Adafruit_Protomatter* matrix, int nRows, int row, const char *str)
-{
+void DrawText(Adafruit_Protomatter* matrix, int nRows, int row, const char* str) {
   int16_t x1, y1;
   uint16_t strWidth, charHeight;
   matrix->getTextBounds(str, 0, 0, &x1, &y1, &strWidth, &charHeight);  // How big is it?
-  int nGaps = nRows+1;
-  int gapSize = (matrix->height() - charHeight*nRows)/nGaps;
+  int nGaps = nRows + 1;
+  int gapSize = (matrix->height() - charHeight * nRows) / nGaps;
 
-  int16_t textY = (gapSize+charHeight)*row - (y1+charHeight) ;
-  int16_t textX = matrix->width() /2 - (x1 + strWidth / 2);         // Center text horizontally
+  int16_t textY = (gapSize + charHeight) * row - (y1 + charHeight);
+  int16_t textX = matrix->width() / 2 - (x1 + strWidth / 2);  // Center text horizontally
   matrix->setCursor(textX, textY);
   matrix->print(str);
 }
 
 
-void SetupWiFi(Adafruit_Protomatter* matrix)
-{
+void SetupWiFi(Adafruit_Protomatter* matrix) {
   char str[50];
+  WiFi.disconnect();
 
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     int numSSIDs = sizeof(credentials) / sizeof(credentials[0]);
-    for (size_t i = 0; (i < numSSIDs); i++)
-    {
+    for (size_t i = 0; (i < numSSIDs); i++) {
       String ssid = credentials[i][0];
       String pass = credentials[i][1];
 
       Serial.print("Connecting to ");
-      Serial.println();
+      Serial.println(credentials[i][0]);
       Serial.print("pass: ");
       Serial.println(credentials[i][1]);
+      Serial.println();
 
       matrix->fillScreen(0);  // Fill background black
       matrix->setFont(&Picopixel);
@@ -185,17 +179,22 @@ void SetupWiFi(Adafruit_Protomatter* matrix)
       sprintf(str, ". . .");
       DrawText(matrix, 3, 3, str);
       matrix->show();
-      
-      WiFi.begin(ssid.c_str(), pass.c_str());
 
-      int tries = 5 * 2;
-      String dots = "";
-      while (WiFi.status() != WL_CONNECTED && tries-- > 0)
-      {
-        delay(500);
+      Serial.println("calling begin...");
+      WiFi.begin(ssid.c_str(), pass.c_str());
+      Serial.println("called begin");
+
+      int tries = 10;
+      String dots = ". . .";
+      while (WiFi.status() != WL_CONNECTED && tries-- > 0) {
+
+        delay(1000);
         Serial.print(".");
-        dots = dots + ".";
+        dots = dots + " .";
+
         //tft.drawString(dots, 320 / 2, 240 / 2 + 20);
+        DrawText(matrix, 3, 3, dots.c_str());
+        matrix->show();
       }
 
       if (WiFi.status() == WL_CONNECTED)
@@ -205,8 +204,7 @@ void SetupWiFi(Adafruit_Protomatter* matrix)
 }
 
 
-void SetupNTP()
-{
+void SetupNTP() {
   Serial.print("IP number assigned by DHCP is ");
   Serial.println(WiFi.localIP());
   Serial.println("Starting UDP");
@@ -214,8 +212,7 @@ void SetupNTP()
   Serial.println("waiting for sync");
   setSyncProvider(getNtpTime);
   setSyncInterval(ntpSyncIntervalInSeconds);
-  while (timeStatus() == timeNotSet)
-  {
+  while (timeStatus() == timeNotSet) {
     Serial.print(".");
     delay(100);
   }
